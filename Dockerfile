@@ -1,6 +1,6 @@
 FROM debian:buster
 
-LABEL maintainer="Colin Wilson colin@wyveo.com"
+LABEL maintainer="Maxime Griot"
 
 # Let the container know that there is no tty
 ENV DEBIAN_FRONTEND noninteractive
@@ -39,8 +39,6 @@ RUN buildDeps='curl gcc make autoconf libc-dev zlib1g-dev pkg-config' \
             python-pip \
             python-setuptools \
             git \
-            libmemcached-dev \
-            libmemcached11 \
             libmagickwand-dev \
             nginx=${NGINX_VERSION} \
             php7.3-fpm \
@@ -60,7 +58,7 @@ RUN buildDeps='curl gcc make autoconf libc-dev zlib1g-dev pkg-config' \
             php7.3-intl \
             php7.3-xml \
             php-pear \
-    && pecl -d php_suffix=7.3 install -o -f redis memcached imagick \
+    && pecl -d php_suffix=7.3 install -o -f redis imagick \
     && mkdir -p /run/php \
     && pip install wheel \
     && pip install supervisor supervisor-stdout \
@@ -81,22 +79,16 @@ RUN buildDeps='curl gcc make autoconf libc-dev zlib1g-dev pkg-config' \
     && sed -i -e "s/www-data/nginx/g" ${fpm_conf} \
     && sed -i -e "s/^;clear_env = no$/clear_env = no/" ${fpm_conf} \
     && echo "extension=redis.so" > /etc/php/7.3/mods-available/redis.ini \
-    && echo "extension=memcached.so" > /etc/php/7.3/mods-available/memcached.ini \
     && echo "extension=imagick.so" > /etc/php/7.3/mods-available/imagick.ini \
     && ln -sf /etc/php/7.3/mods-available/redis.ini /etc/php/7.3/fpm/conf.d/20-redis.ini \
     && ln -sf /etc/php/7.3/mods-available/redis.ini /etc/php/7.3/cli/conf.d/20-redis.ini \
-    && ln -sf /etc/php/7.3/mods-available/memcached.ini /etc/php/7.3/fpm/conf.d/20-memcached.ini \
-    && ln -sf /etc/php/7.3/mods-available/memcached.ini /etc/php/7.3/cli/conf.d/20-memcached.ini \
     && ln -sf /etc/php/7.3/mods-available/imagick.ini /etc/php/7.3/fpm/conf.d/20-imagick.ini \
-    && ln -sf /etc/php/7.3/mods-available/imagick.ini /etc/php/7.3/cli/conf.d/20-imagick.ini
-
-RUN curl -o /tmp/composer-setup.php https://getcomposer.org/installer \
-  && curl -o /tmp/composer-setup.sig https://composer.github.io/installer.sig \
-  && php -r "if (hash('SHA384', file_get_contents('/tmp/composer-setup.php')) !== trim(file_get_contents('/tmp/composer-setup.sig'))) { unlink('/tmp/composer-setup.php'); echo 'Invalid installer' . PHP_EOL; exit(1); }" \
-  && php /tmp/composer-setup.php --no-ansi --install-dir=/usr/local/bin --filename=composer --version=${COMPOSER_VERSION} && rm -rf /tmp/composer-setup.php
-
-# Clean up
-RUN rm -rf /tmp/pear \
+    && ln -sf /etc/php/7.3/mods-available/imagick.ini /etc/php/7.3/cli/conf.d/20-imagick.ini \
+    && curl -o /tmp/composer-setup.php https://getcomposer.org/installer \
+    && curl -o /tmp/composer-setup.sig https://composer.github.io/installer.sig \
+    && php -r "if (hash('SHA384', file_get_contents('/tmp/composer-setup.php')) !== trim(file_get_contents('/tmp/composer-setup.sig'))) { unlink('/tmp/composer-setup.php'); echo 'Invalid installer' . PHP_EOL; exit(1); }" \
+    && php /tmp/composer-setup.php --no-ansi --install-dir=/usr/local/bin --filename=composer --version=${COMPOSER_VERSION} && rm -rf /tmp/composer-setup.php \
+    && rm -rf /tmp/pear \
     && apt-get purge -y --auto-remove $buildDeps \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
